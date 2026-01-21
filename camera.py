@@ -559,8 +559,17 @@ class imagearray:
             # Release the request
             request.release()
 
-            # Reformat the array. ChatGPT optimized this for speed
-            array = array.view(np.uint16) * np.left_shift(1, (16 - 12))
+            # First step  : Unpack 12bit values from 8bit stream, store as 16bit. Values are left shifted 4 bits, ie 2 ^ 4 (=16) too large. 
+            # Will be in range 0 - 65535 so we have to do a right_shift of 4
+            #array = array.view(np.uint16) >> 4 # Ensure array is of type uint16 (no need for astype) + In-place right shift
+            np.right_shift(array.view(np.uint16), 4, out=array.view(np.uint16))
+
+            # Second step  : Resize array to correct frame size according to max resolution and subframe settings
+            array = array[state.start_y:state.start_y + state.num_y, 
+                          state.start_x:state.start_x + state.num_x]
+
+            # Third step :Transpose the array
+            array = np.transpose(array)
 
             # Resize array to correct frame size according to max resolution and subframe settings
             array = array[state.start_y:state.start_y + state.num_y, state.start_x:state.start_x + state.num_x]
