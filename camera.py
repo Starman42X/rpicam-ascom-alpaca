@@ -560,7 +560,7 @@ class imagearray:
             request.release()
 
             # Reformat the array. ChatGPT optimized this for speed
-            array = array.view(np.uint16) * np.left_shift(1, (16 - 12))
+            array = np.right_shift(array.view(np.uint16), 4)
 
             # Resize array to correct frame size according to max resolution and subframe settings
             array = array[state.start_y:state.start_y + state.num_y, state.start_x:state.start_x + state.num_x]
