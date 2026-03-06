@@ -19,16 +19,39 @@ Happy if anyone wants to add support for other cameras or test it with other pro
 
 *Note, Currently (as of 2.2) NINA always assumes RGGB bayer when it displays in the imaging tab for any ASCOM driver, not just this one. You should change NINA settings to force BGGR for HQ camera. However, regardless of the settings, the output FITS files will always be correct*
 
-To get this driver to work, clone this repo onto your Raspberry pi and install the dependencies below.
+## Installation and Usage
 
-```
+### Step 1: Raspberry Pi Setup
+To get this driver to work, clone this repository onto your Raspberry Pi and install the necessary dependencies:
+
+```bash
+# Clone the repository
+git clone https://github.com/IanCassTwo/rpicam-ascom-alpaca.git
+cd rpicam-ascom-alpaca
+
+# Install Python packages
 pip3 install falcon toml orjson
-apt-get install python3-picamera2 python3-lxml python3-astropy
+
+# Install required system packages
+sudo apt-get update
+sudo apt-get install python3-picamera2 python3-lxml python3-astropy
 ```
 
-Then run "python app.py".
+### Step 2: Start the Driver
+Run the application on the Raspberry Pi:
+```bash
+python app.py
+```
+*(You may want to set this up as a systemd service or inside a `tmux` session to keep it running in the background).*
 
-Back on your Windows PC, run the ASCOM Diagnostics, then "Choose and Connect to a Device", Select "Camera" from the dropdown, then use the Alpaca menu to turn on Alpaca device discovery. It should then find the Raspberry PI camera and offer to install it for you. From that point onwards, you can just select it in NINA or PHD2 like you can any other ASCOM driver
+### Step 3: ASCOM Configuration (Windows PC)
+1. Ensure the **ASCOM Platform** is installed on your Windows PC.
+2. Open the **ASCOM Diagnostics** tool.
+3. Click on **Choose and Connect to a Device**.
+4. Select **Camera** from the dropdown menu.
+5. In the ASCOM Chooser window, open the **Alpaca** menu and turn on **Alpaca device discovery**.
+6. The tool should automatically find the Raspberry PI camera on your network and offer to install it.
+7. From that point onwards, the camera will be available as an ASCOM driver in software like NINA, Sharpcap, or PHD2.
 
 This project was made possible by the ASCOM AlpycaDevice SDK https://github.com/ASCOMInitiative/AlpycaDevice and the Python Picamera2 SDK https://github.com/raspberrypi/picamera2
 Original rpicam-ascom-alpaca repo: https://github.com/IanCassTwo/rpicam-ascom-alpaca
