@@ -266,23 +266,23 @@ class ImageArrayResponse(PropertyResponse):
             # b = self.Value.tobytes(order='c')   # this is the original slow version
 
             # Ensure the desired data type and byte order
-            value = self.Value.astype(np.int32, order='C')
+            value = self.Value.astype(np.uint16, order='C')
 
             # Get the underlying data buffer as a ctypes array
             data_array = np.ctypeslib.as_array(value)
-            data_array = data_array.ravel(order='K')
+            data_array = data_array.ravel()
 
             # Obtain the byte string
-            b = data_array.tobytes()
+            b = data_array.tobytes(order='C')
 
-            return struct.pack(f"<IIIIIIIIIII{len(b)}s",
+            return struct.pack(f"<IIIIIIIIIII{str(self.Value.nbytes)}s",
                 1,                              # Metadata Version = 1
                 self.ErrorNumber,               
                 self.ClientTransactionID,
                 self.ServerTransactionID,
                 44,                             # DataStart
                 2,                              # ImageElementType = 2 = int32
-                2,                              # TransmissionElementType = 2 = int32
+                8,                              # TransmissionElementType = 8 = uint16
                 self.Rank,                      # Rank = 2 = bayer
                 self.Value.shape[0],            # length of column
                 self.Value.shape[1],            # length of rows
