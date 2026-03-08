@@ -47,3 +47,6 @@ class State:
                 self.start_y = 0
                 self.binning = 1
                 self.temperature = 0
+                self.cooler_on = False
+                self.cooler_power = 0.0
+                self.set_temperature = 0.0

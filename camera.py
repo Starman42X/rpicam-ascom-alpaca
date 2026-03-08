@@ -24,6 +24,7 @@ from state import State
 import libcamera
 import numpy as np
 import threading
+import time
 
 logger: Logger = None
 state = State()
@@ -67,6 +68,20 @@ def start_camera_device(logger: logger):
     # Initialize PiCamera2
     global picam2
     picam2 = Picamera2()
+
+    def temperature_updater():
+        while True:
+            try:
+                if picam2 and picam2.started:
+                    metadata = picam2.capture_metadata()
+                    if metadata and 'SensorTemperature' in metadata:
+                        state.temperature = float(metadata['SensorTemperature'])
+            except Exception as e:
+                pass
+            time.sleep(0.1)
+            
+    temp_thread = threading.Thread(target=temperature_updater, daemon=True)
+    temp_thread.start()
 
 def get_config():
     return picam2.create_still_configuration( {"size": (640, 480)}, queue=False, buffer_count=2,  raw={'format': sensor.get_raw_format(),'size': (int(sensor.get_size_x() / state.binning), int(sensor.get_size_y() / state.binning))})
@@ -303,7 +318,7 @@ class canfastreadout:
 class cangetcoolerpower:
 
     def on_get(self, req: Request, resp: Response, devnum: int):
-        resp.text = PropertyResponse(False, req).json
+        resp.text = PropertyResponse(True, req).json
 
 
 @before(PreProcessRequest(maxdev))
@@ -317,7 +332,7 @@ class canpulseguide:
 class cansetccdtemperature:
 
     def on_get(self, req: Request, resp: Response, devnum: int):
-        resp.text = PropertyResponse(False, req).json
+        resp.text = PropertyResponse(True, req).json
 
 @before(PreProcessRequest(maxdev))
 class canstopexposure:
@@ -340,19 +355,20 @@ class ccdtemperature:
 class cooleron:
 
     def on_get(self, req: Request, resp: Response, devnum: int):
-        resp.text = PropertyResponse(None, req,
-                        NotImplementedException()).json
+        resp.text = PropertyResponse(state.cooler_on, req).json
 
     def on_put(self, req: Request, resp: Response, devnum: int):
-        resp.text = PropertyResponse(None, req,
-                NotImplementedException()).json
+        conn_str = get_request_field('CoolerOn', req)
+        conn = to_bool(conn_str)
+        state.cooler_on = conn
+        logger.debug(f"Cooler set to: {conn}")
+        resp.text = MethodResponse(req).json
 
 @before(PreProcessRequest(maxdev))
 class coolerpower:
 
     def on_get(self, req: Request, resp: Response, devnum: int):
-        resp.text = PropertyResponse(None, req,
-                    NotImplementedException()).json
+        resp.text = PropertyResponse(state.cooler_power, req).json
 
 @before(PreProcessRequest(maxdev))
 class electronsperadu:
@@ -868,12 +884,19 @@ class sensortype:
 class setccdtemperature:
 
     def on_get(self, req: Request, resp: Response, devnum: int):
-        resp.text = PropertyResponse(None, req,
-                NotImplementedException()).json
+        resp.text = PropertyResponse(state.set_temperature, req).json
 
     def on_put(self, req: Request, resp: Response, devnum: int):
-        resp.text = PropertyResponse(None, req,
-                NotImplementedException()).json
+        temp_str = get_request_field('SetCCDTemperature', req)
+        try:
+            t = float(temp_str)
+        except:
+            resp.text = MethodResponse(req,
+                            InvalidValueException(f'SetCCDTemperature {temp_str} not a valid number.')).json
+            return
+        state.set_temperature = t
+        logger.debug(f"Cooler temp set to: {t}")
+        resp.text = MethodResponse(req).json
 
 @before(PreProcessRequest(maxdev))
 class startx:
